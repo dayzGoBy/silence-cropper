@@ -1,0 +1,9 @@
+name: silence-cropper
+dependencies:
+  - python=3.8
+  - pip
+  - conda-forge::ffmpeg
+  - pip:
+    - setuptools
+    - moviepy
+    - pytube
