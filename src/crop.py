@@ -1,22 +1,17 @@
 import sys
 import subprocess as sp
 from os import linesep
+from itertools import accumulate
+from functools import reduce
 from moviepy.editor import VideoFileClip, concatenate_videoclips
-from pytube import YouTube as yt
 
 
 minimum_duration = 1.0
 threshold = -40
 
-def download(link):
-    with yt(link) as video:
-        stream = video.streams.filter(mime_type="video/mp4", res="720p")[0]
-        name = "/input/" + str(hash(link)) + ".mp4"
-        stream.download(name)
-        
-        return name
-
 def get_silence(file_in):
+    print(f"Detecting silence in {file_in} with {threshold}db threshold")
+
     output = sp.run(["ffmpeg", "-hide_banner", "-vn", "-i", file_in,
              "-af","silencedetect=n=" + str(threshold) + "dB:d=1",
              "-f","null","-"], capture_output=True)
@@ -42,8 +37,16 @@ def main():
     with VideoFileClip(file_in) as video:
         last = 0.0
         clips = []
+        
+        silence = get_silence(file_in)
 
-        for start, end in get_silence(file_in):
+        print("Compression rate is: "
+              + str(reduce(
+                        lambda accum, x: accum + x[1] - x[0], 
+                        silence, 0.0
+                      ) / video.duration))
+
+        for start, end in silence:
             clips.append(video.subclip(last, start))
             last = end
 
